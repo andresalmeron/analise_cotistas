@@ -187,20 +187,20 @@ if uploaded_file:
 
                 with c1:
                     st.markdown("#### 1. Consistência ($R^2$)")
-                    st.metric("Confiabilidade Pré", f"{r2_pre:.2f}", help="Se baixo (<0.4), o passado era caótico.")
-                    st.metric("Confiabilidade Pós", f"{r2_post:.2f}", delta=f"{r2_post - r2_pre:.2f}")
+                    st.metric("Confiabilidade Pré", f"{r2_pre:.2f}".replace('.',','), help="Se baixo (<0.4), o passado era caótico.")
+                    st.metric("Confiabilidade Pós", f"{r2_post:.2f}".replace('.',','), delta=f"{r2_post - r2_pre:.2f}")
                     if r2_pre < 0.4:
                         st.warning("⚠️ Histórico volátil. Projeção baseada em ruído.")
 
                 with c2:
                     st.markdown("#### 2. Velocidade")
                     lbl = "cotistas/dia" if model_choice == "Linear" else "% ao dia"
-                    st.metric("Velocidade Pré", f"{slope_pre:.3f} {lbl}")
-                    st.metric("Velocidade Pós", f"{slope_post:.3f} {lbl}", delta=f"{slope_post - slope_pre:.3f}")
+                    st.metric("Velocidade Pré", f"{slope_pre:.2f}".replace('.',',') + f" {lbl}")
+                    st.metric("Velocidade Pós", f"{slope_post:.2f}".replace('.',',') + f" {lbl}", delta=f"{slope_post - slope_pre:.3f}")
 
                 with c3:
                     st.markdown("#### 3. Veredito Final")
-                    st.metric("Alpha (Cotistas)", f"{int(alpha_abs):+,}")
+                    st.metric("Alpha (Cotistas)", f"{int(alpha_abs):+,}".replace(',',' '))
                     st.metric("Uplift (%)", f"{alpha_pct:.1f}%")
                     
                     if alpha_pct > 5 and r2_post > 0.6:
