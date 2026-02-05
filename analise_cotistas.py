@@ -10,6 +10,28 @@ st.set_page_config(page_title="Portfel Event Study: Robustness", layout="wide")
 st.title("📊 Análise de Evento: Impacto e Confiabilidade Estatística")
 
 # --- FUNÇÕES AUXILIARES ---
+def clean_outliers_anbima(df, threshold=2.5):
+    """
+    Específica para dados Anbima/CVM. Identifica quedas ou saltos
+    abruptos que retornam ao normal rapidamente.
+    """
+    df_clean = df.copy()
+    
+    # Calculamos a mediana móvel para ter uma base de comparação robusta
+    # Usamos uma janela de 5 dias para captar o 'ritmo' do fundo
+    df_clean['mediana_movel'] = df_clean['Cotistas'].rolling(window=5, center=True).median()
+    
+    # Identificamos o outlier: se o valor real for muito diferente da mediana ao redor dele
+    # (Ex: 1 vs 185)
+    is_outlier = (df_clean['Cotistas'] < df_clean['mediana_movel'] * 0.5) | \
+                 (df_clean['Cotistas'] > df_clean['mediana_movel'] * 1.5)
+    
+    # Marcamos como NaN e interpolamos linearmente
+    df_clean.loc[is_outlier, 'Cotistas'] = np.nan
+    df_clean['Cotistas'] = df_clean['Cotistas'].interpolate(method='linear')
+    
+    return df_clean, is_outlier.sum()
+
 def fit_trend_model(df_segment, model_type='Linear'):
     """
     Ajusta modelo Linear ou Exponencial e retorna métricas detalhadas.
@@ -187,6 +209,25 @@ if uploaded_file:
                         st.error("🔻 **Sem Impacto:** O ativo performou abaixo da tendência histórica.")
                     else:
                         st.info("ℹ️ **Impacto Neutro/Marginal.**")
+
+
+                st.sidebar.header("Configurações")
+uploaded_file = st.sidebar.file_uploader("Upload Planilha Anbima (.xlsx)", type=["xlsx"])
+
+if uploaded_file:
+    # Passo A: Leitura Bruta
+    df_raw = pd.read_excel(uploaded_file)
+    df_raw['Data'] = pd.to_datetime(df_raw['Data'])
+    df_raw = df_raw.sort_values('Data')
+
+    # Passo B: HIGIENIZAÇÃO (AQUI É O LUGAR CORRETO)
+    st.sidebar.subheader("Módulo de Limpeza")
+    if st.sidebar.toggle("Limpar Ruídos CVM/Anbima", value=True):
+        df, total_errors = clean_outliers_anbima(df_raw)
+        if total_errors > 0:
+            st.sidebar.warning(f"🚨 {total_errors} erros de dados corrigidos.")
+    else:
+        df = df_raw.copy()
 
                 # --- ABA EDUCATIVA ---
                 st.divider()
